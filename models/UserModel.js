@@ -29,9 +29,12 @@ const UserSchema = new mongoose.Schema({
         trim: true,
         minlength:6
     },
+    passwordchangetime:{
+        type: Date
+    },
     role: {
         type: String,
-        enum: ["user","admin"],
+        enum: ["user","manager","admin"],
         default: "user"
     },
     active: {
@@ -62,38 +65,17 @@ function validateRegisterUser(obj){
     return schema.validate(obj) 
 }
 
-UserSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
 
-    try {
-        // Compare entered currentPassword with stored hashed password
-        const isCurrentPasswordValid = await bcrypt.compare(this.currentPassword, this.password);
-
-        if (!isCurrentPasswordValid) {
-            throw new Error('Current password is incorrect');
-        }
-
-        // If validation passes, update the password
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
 async function validateUpdatePassword(obj) {
     const schema = Joi.object({
-        currentPassword: Joi.string(),
-        password: Joi.string().min(6),
-        confirmPassword: Joi.string().valid(Joi.ref('password')).required()
-        .error(errors => {
-            return { message: 'Passwords do not match' };
-        }),     
+        currentPassword: Joi.string().required(),
+        password: Joi.string().min(6).required(),
+        confirmPassword: Joi.string().required()
     }); 
     
     return schema.validate(obj);   
 }
+
 
 
 //works in update , get all , get one
@@ -131,17 +113,17 @@ function validateChangePassword(obj){
     });
     return schema.validate(obj) 
 }
-
+    
 //Validate Update User
 function validateUpdateUser(obj){
     const schema = Joi.object({
         email: Joi.string().trim().email().optional(),
         name: Joi.string().trim().min(2).max(100).optional(),
-        phone: Joi.when('locale', {
-            is: Joi.valid('ar-eg', 'ar-sa'),
-            then: JoiPhoneNumber().eg().optional(),
-            otherwise: JoiPhoneNumber().optional(),
-        }),
+        // phone: Joi.when('locale', {
+        //     is: Joi.valid('ar-eg', 'ar-sa'),
+        //     then: JoiPhoneNumber().eg().optional(),
+        //     otherwise: JoiPhoneNumber().optional(),
+        // }),
         profileImage: Joi.string().optional(),
         role: Joi.string().optional(),
         active: Joi.string().optional()

@@ -43,6 +43,9 @@ app.use("/api/User",UserPath)
 app.use(errors.NotFound);
 app.use(errors.errorhandler);
 
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 //Running the server
 const Port = process.env.Port || 8000; 
@@ -51,10 +54,19 @@ const server = app.listen(Port , () => console.log(`server is runing ${Port}`))
 
 //Events ==> listion ==> callback(err)
 //handle errors outside express
-process.on('unhandledRejection' , (err) => {
-    console.error(`UnhandledRejection Errors:${err.name} | ${err.message}`)
-    server.close(()=>{
-        console.error(`Shutting down`)
-        process.exit(1)
-    })
-})
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM. Shutting down gracefully...');
+    server.close(() => {
+        console.log('Server closed.');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('Received SIGINT. Shutting down gracefully...');
+    server.close(() => {
+        console.log('Server closed.');
+        process.exit(0);
+    });
+});

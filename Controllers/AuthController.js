@@ -54,9 +54,8 @@ const userRegistration = asynchandler(async(req,res)=>{
 
     // save the inputs in the database
     const result = await User.create(req.body)
-    // const token = jwt.sign({id : user._id , isAdmin: user.isAdmin} , process.env.JWT_SECRET_KEY);
-    // const { password, ...other }=result._doc
-        res.status(201).json(result)
+    const token = jwt.sign({id : result._id } , process.env.JWT_SECRET_KEY);
+    res.status(201).json({data: result , token})
 })
 
 
@@ -86,9 +85,8 @@ const userLogin = asynchandler(async(req,res)=>{
     }
 
     // save the inputs in the database
-    const token = jwt.sign({id : user._id , isAdmin: user.isAdmin} , process.env.JWT_SECRET_KEY);
-    const { password, ...other }=user._doc
-        res.status(200).json({...other , token})
+    const token = jwt.sign({id : user._id} , process.env.JWT_SECRET_KEY);
+        res.status(200).json({data: user , token})
 })
 
 module.exports={

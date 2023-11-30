@@ -1,11 +1,11 @@
 const express = require("express")
 const route = express.Router()
 const { UploadUserImage, resizeImage,getUsers, getUserbyId, UpdateUser, UpdateUserPassword , Deleteuser} = require("../Controllers/UserController")
-const { UploadUserProfileImage, resizeImageforuser,userRegistration}=require("../Controllers/AuthController")
+const { UploadUserProfileImage, resizeImageforuser,userRegistration , userLogin}=require("../Controllers/AuthController")
 
 
 route.post("/Register", UploadUserProfileImage, resizeImageforuser, userRegistration)
-// route.post("/Login")
+route.post("/Login" , userLogin)
 
 route.get("/" , getUsers)
 route.get("/:id" , getUserbyId)

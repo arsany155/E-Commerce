@@ -34,7 +34,7 @@ const resizeImage =asynchandler( async (req,res,next) => {
 * @access   private (only Admin)
 */
 const getUsers = asynchandler(async (req,res) => {
-    const users = await User.find().select("-password")
+    const users = await User.find()
 
     if (users){
         res.status(200).json({results: users.length ,data: users})
@@ -94,25 +94,28 @@ const UpdateUser = asynchandler(async(req,res) => {
 * @access   private
 */
 const UpdateUserPassword = asynchandler(async(req,res) => {
+    const {error} = validateUpdatePassword(req.body);
+    if (error) {
+        return res.status(400).json({message: error.details[0].message})
+    }
     const user = await User.findById(req.params.id);
     if (!user) {
         return 'User not found';
-    }
-
-    const {error} = validateUpdatePassword(req.body );
-    if (error) {
-        return res.status(400).json({message: error.details[0].message})
     }
 
     const isPassword = await bcrypt.compare(req.body.currentPassword , user.password)
     if(!isPassword){
         return res.status(400).json({message: "invalid password , Please enter your old password"})
     }
+    if(req.body.confirmPassword != req.body.password){
+        return res.status(400).json({message: "the cofirm password doesn't match with the password"})
+    }
 
-    await User.findByIdAndUpdate(req.params.id ,{
-        password: await bcrypt.hash(req.body.password , 12)
+    const usr = await User.findByIdAndUpdate(req.params.id ,{
+        password: await bcrypt.hash(req.body.password , 12),
+        passwordchangetime: Date.now()
     }, {new: true})
-    res.status(200).json({msg : 'your password have been changed'})
+    res.status(200).json({msg : 'your password have been changed' , data: usr})
 })
 
 
