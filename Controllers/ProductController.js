@@ -5,11 +5,12 @@ const {Categories} = require("../models/CategoriesModel")
 const {SubCategories} = require("../models/SubCategoriesModel")
 const apiFeatures = require("../utilites/apiFeatures")
 const sharp =require("sharp") //require buffer so we use memoryStorage
+const {Review} =require("../models/ReviewsModel")
+const { mongoose } = require('mongoose')
+
 
 
 const {uploadArrayImage} = require("../middlewares/uploadImages")
-
-
 
 
 
@@ -100,14 +101,45 @@ const getProducts = asynchandler(async (req, res) => {
 * @access   public
 */ 
 const getProductID = asynchandler(async(req,res) =>{
-    const product = await Product.findById(req.params.id)
-
-    if (product){
-        res.status(200).json(product)
-    }else{
-        res.status(404).json({message:"Product not found"})
+    let query =  Product.findById(req.params.id)
+    if('reviews'){
+        query = query.populate('reviews')
     }
+    const productt =await query
+    if (!productt){
+        res.status(404).json({message:"Product not found"})
+        return  
+    }
+
+    const result = await Review.aggregate([
+        {
+            $match: {
+                product: new mongoose.Types.ObjectId(req.params.id),
+            }
+        },
+        {
+            $group: {
+                _id: '$product', 
+                avgRatings: { $avg: '$ratings' },
+                ratingQuantity: { $sum: 1 },
+            }
+        }
+    ]);
+
+        if (result.length > 0) {
+            productt.ratingsAverage = result[0].avgRatings;
+            productt.ratingQuantity = result[0].ratingQuantity;
+        } else {
+            productt.ratingsAverage = 0;
+            productt.ratingQuantity = 0;
+        }
+    
+        // Save the updated product
+        await productt.save();
+    
+        res.status(200).json(productt)
 })
+
 
 /** 
 * @desc     Create new Product 

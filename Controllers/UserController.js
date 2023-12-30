@@ -51,7 +51,11 @@ const getUsers = asynchandler(async (req,res) => {
 * @access   private (only Admin & user him self)
 */
 const getUserbyId = asynchandler(async(req , res) => {
-    const user = await User.findById(req.params.id).select("-password")
+    var id = req.params.id
+    if(!id){
+        id = req.user._id
+    }
+    const user = await User.findById(id).select("-password")
     if(user){
         res.status(200).json(user)
     }else {

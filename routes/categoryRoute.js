@@ -1,15 +1,15 @@
 const express = require("express")
 const route = express.Router()
 const {UploadCategoryImage, resizeImage , getCategories , getCategoryID , CreateCategory , UpdateCategory, DeleteCategory} = require("../Controllers/CategoryController")
-const{verifyToken}=require("../middlewares/verifyToken")
+const{ verifyTokenandAutherization, verifyTokenandAdmin}=require("../middlewares/verifyToken")
 
 
 
-route.get("/" , getCategories)
-route.get("/:id" , getCategoryID)
-route.post("/" ,verifyToken, UploadCategoryImage, resizeImage ,CreateCategory)
-route.put("/:id" ,UploadCategoryImage, resizeImage , UpdateCategory)
-route.delete("/:id", DeleteCategory)
+route.get("/" ,verifyTokenandAutherization, getCategories)
+route.get("/:id" , verifyTokenandAutherization , getCategoryID)
+route.post("/" , verifyTokenandAdmin , UploadCategoryImage, resizeImage ,CreateCategory)
+route.put("/:id" , verifyTokenandAdmin ,UploadCategoryImage, resizeImage , UpdateCategory)
+route.delete("/:id", verifyTokenandAdmin , DeleteCategory)
 
 
 module.exports =route   

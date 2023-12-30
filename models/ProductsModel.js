@@ -72,8 +72,9 @@ const ProductSchema = new mongoose.Schema({
 
     ratingsAverage: {
         type: Number,
-        min: [1, "Rating must be above or equal 1.0"],
-        max: [5, "Rating must be below or equal 5.0"]
+        min: [0, "Rating must be above or equal 1.0"],
+        max: [5, "Rating must be below or equal 5.0"],
+        default: 0
     },
 
     ratingQuantity: {
@@ -82,7 +83,10 @@ const ProductSchema = new mongoose.Schema({
     }
 
 
-},{timestamps: true})
+},{timestamps: true , 
+    toJSON: {virtuals: true},
+    toObject: {virtuals: true}    
+})
 
 //Validate create a new book
 function validateCreateProduct(obj){
@@ -98,8 +102,8 @@ function validateCreateProduct(obj){
         brand: Joi.string().optional(),
         imagecover: Joi.string().required(),
         images: Joi.array().items(Joi.string()).optional(),
-        ratingsAverage: Joi.number().min(1).max(5).optional(),
-        ratingQuantity: Joi.number().default(0).optional(),
+        ratingsAverage: Joi.number().min(0).max(5),
+        ratingQuantity: Joi.number(),
         colors: Joi.array().items(Joi.string()).optional(),
     });
     return schema.validate(obj) 
@@ -120,8 +124,8 @@ function validateUpdateProduct(obj){
         subcategories: Joi.string(),
         brand: Joi.string(),
         imagecover: Joi.string(),
-        ratingsAverage: Joi.number().min(1).max(5),
-        ratingQuantity: Joi.number().default(0),
+        ratingsAverage: Joi.number().min(0).max(5),
+        ratingQuantity: Joi.number(),
         colors: Joi.string(),
         images: Joi.string()
     });
@@ -160,6 +164,13 @@ ProductSchema.post('save', function(doc){
     }
 })
 
+
+//get reviews of this product
+ProductSchema.virtual('reviews',{
+    ref: 'Review',
+    foreignField: "product",
+    localField: "_id"
+})
 
 
 // to do popluate 

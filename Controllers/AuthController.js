@@ -4,8 +4,8 @@ const jwt =require("jsonwebtoken")
 const { User, validateLoginUser, validateRegisterUser} = require("../models/UserModel")
 const sharp =require("sharp") //require buffer so we use memoryStorage
 const {uploadSingleImage} = require("../middlewares/uploadImages")
-
-
+const crypto = require("crypto")
+const {sendEmail} = require("../utilites/sendEmail")
 
 
 const UploadUserProfileImage =uploadSingleImage('profileImage')
@@ -89,9 +89,124 @@ const userLogin = asynchandler(async(req,res)=>{
         res.status(200).json({data: user , token})
 })
 
+
+
+
+/** 
+* @desc     forget user Password
+* @route    /api/auth/forgetPassword
+* @method   POST
+* @access   public
+*/
+const forgetPassword = asynchandler(async(req,res) => {
+    // 1) get user by email
+    const user =await User.findOne({email: req.body.email})
+    if(!user){
+        res.json({msg: "user not found"})
+    }
+
+    // 2) create a random number of 6-digits and save it in db
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString()
+    const hashedResetCode = crypto
+    .createHash('sha256')
+    .update(resetCode)
+    .digest('hex')
+
+    user.passwordResetCode = hashedResetCode
+    user.passwordResetExpire = Date.now() + 10 * 60 * 1000
+    user.passwordResetVerified = false
+    await user.save()
+    
+    try {
+        // 3) send email
+        await sendEmail({
+            res,
+            email: user.email, 
+            message: `Hi ${user.name}. \n We  received a request to reset the password , here is the reset code \n ${resetCode} \n type this otp number  in verification`
+        })
+    } catch (error) {     
+        user.passwordResetCode = undefined
+        user.passwordResetExpire = undefined
+        user.passwordResetVerified = undefined
+        await user.save()
+        return "there is error in sending email "
+    }
+
+    res.json({msg: "Reset code sent  to email"})
+})
+
+
+
+/** 
+* @desc     forget user Password
+* @route    /api/auth/VerifyPassCode
+* @method   POST
+* @access   public
+*/
+const verifyPassCodeOtp = asynchandler(async(req,res) => {
+    const hashedResetCode = crypto
+    .createHash('sha256')
+    .update(req.body.resetCode)
+    .digest('hex')
+    
+    const user = await User.findOne({passwordResetCode: hashedResetCode })
+    if(!user){
+        res.json({msg: "Reset Code is invalid"})
+    }
+
+    user.passwordResetVerified= true
+    await user.save()
+    res.json({msg:"success"})
+})
+
+
+
+
+/** 
+* @desc     Reset user Password
+* @route    /api/auth/ResetPassword
+* @method   PUT
+* @access   public
+*/
+const ResetPassword = asynchandler(async(req, res) => {
+    const user = await User.findOne({email: req.body.email})
+    if(!user){
+        res.json({msg: "user not found"})
+    }
+
+    if(!user.passwordResetVerified){
+        res.json({msg: "Reset code is not verified"})
+    }
+     //crypt the password
+    const salt = await bcrypt.genSalt(10);
+    req.body.password = await bcrypt.hash(req.body.password , salt) 
+
+    user.password = req.body.password
+    user.passwordResetCode = undefined
+    user.passwordResetExpire = undefined
+    user.passwordResetVerified = undefined
+    await user.save()
+
+    const token = jwt.sign({id : user._id} , process.env.JWT_SECRET_KEY);
+    res.status(200).json({token}) 
+})
+
+
+
+
+
+
+
+
+
 module.exports={
     UploadUserProfileImage,
     resizeImageforuser,
     userRegistration,
-    userLogin
+    userLogin,
+
+
+    forgetPassword,
+    verifyPassCodeOtp,
+    ResetPassword
 }

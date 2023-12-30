@@ -32,6 +32,15 @@ const UserSchema = new mongoose.Schema({
     passwordchangetime:{
         type: Date
     },
+    passwordResetCode:{
+        type: String
+    },
+    passwordResetExpire:{
+        type: Date
+    },
+    passwordResetVerified:{
+        type: Boolean
+    },
     role: {
         type: String,
         enum: ["user","manager","admin"],
@@ -40,7 +49,18 @@ const UserSchema = new mongoose.Schema({
     active: {
         type: String,
         default: true
-    }
+    },
+    wishlist: [{
+        type: mongoose.Schema.ObjectId,
+        ref: 'Products'
+    }],
+    addresses: [{
+        id: {type: mongoose.Schema.Types.ObjectId},
+        alias: String,
+        details: String,
+        phone: String,
+        city: String
+    }]
 }, {timestamps:true})
 
 
